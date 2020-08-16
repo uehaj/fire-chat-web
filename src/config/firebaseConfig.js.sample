@@ -1,0 +1,11 @@
+export default {
+  apiKey: "APIKEY",
+  authDomain: "AUTH_DOMAIN",
+  databaseURL: "DATABASEURL",
+  projectId: "PROJECTID",
+  storageBucket: "STORAGEBUCKET",
+  messagingSenderId: "MESSAGINGSENDERID",
+  appId: "APPID,
+  measurementId: "measurementId"
+};
+
