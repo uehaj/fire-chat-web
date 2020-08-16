@@ -23,21 +23,48 @@ function ChatPage(props: any) {
       idField: 'id',
     }
   );
+  const [text, setText] = useState('');
+
+  function sendMessage(message: string) {
+    firebase
+      .firestore()
+      .collection('rooms')
+      .doc(currentRoomId)
+      .collection('messages')
+      .add({ content: message });
+  }
 
   return (
     <>
       <ul>
         {rooms?.map((room) => (
-          <li key={room.id} onClick={() => setCurrentRoomId(room.id)}>
+          <li
+            key={room.id}
+            onClick={() => {
+              setText('');
+              setCurrentRoomId(room.id);
+            }}>
             {room.name}
           </li>
         ))}
       </ul>
-      <ul>
+      <ul style={{ border: 'solid 1px' }}>
         {messages?.map((message) => (
-          <li>{message.content}</li>
+          <li key={message.id}>{message.content}</li>
         ))}
       </ul>
+      <form
+        onSubmit={(event) => {
+          sendMessage(text);
+          setText('');
+          event.preventDefault();
+        }}>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}></input>
+        <button type="submit">send</button>
+      </form>
     </>
   );
 }
