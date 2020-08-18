@@ -1,19 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
+import { MessageList, Input, Button, ChatList } from 'react-chat-elements';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
+
+import 'react-chat-elements/dist/main.css';
 
 import firebase from 'firebase/app';
 
+type Text = {
+  id: string;
+  text: string;
+  position: 'left' | 'right' | 'center';
+  type: 'text';
+  createdAt: any;
+};
+
+type Room = {
+  name: string;
+  id: string;
+};
+
 function ChatPage(props: any) {
-  const [rooms, roomsLoading, roomsError] = useCollectionData<{
-    name: string;
-    id: string;
-  }>(firebase.firestore().collection('rooms'), { idField: 'id' });
-  const [currentRoomId, setCurrentRoomId] = useState<string>('room1');
-  const [messages, messageLoading, messageError] = useCollectionData<{
-    content: string;
-    id: string;
-  }>(
+  const [rooms] = useCollectionData<Room>(
+    firebase.firestore().collection('rooms'),
+    { idField: 'id' }
+  );
+  const [currentRoomId, setCurrentRoomId] = useState<string>('?');
+  if (currentRoomId === '?' && rooms && rooms[0]) {
+    setCurrentRoomId(rooms[0].id);
+  }
+  const [messages] = useCollectionData<Text>(
     firebase
       .firestore()
       .collection('rooms')
@@ -23,6 +39,7 @@ function ChatPage(props: any) {
       idField: 'id',
     }
   );
+
   const [text, setText] = useState('');
 
   function sendMessage(message: string) {
@@ -31,40 +48,51 @@ function ChatPage(props: any) {
       .collection('rooms')
       .doc(currentRoomId)
       .collection('messages')
-      .add({ content: message });
+      .add({
+        text: message,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
   }
 
   return (
     <>
-      <ul>
-        {rooms?.map((room) => (
-          <li
-            key={room.id}
-            onClick={() => {
-              setText('');
-              setCurrentRoomId(room.id);
-            }}>
-            {room.name}
-          </li>
-        ))}
-      </ul>
-      <ul style={{ border: 'solid 1px' }}>
-        {messages?.map((message) => (
-          <li key={message.id}>{message.content}</li>
-        ))}
-      </ul>
-      <form
-        onSubmit={(event) => {
-          sendMessage(text);
-          setText('');
-          event.preventDefault();
-        }}>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}></input>
-        <button type="submit">send</button>
-      </form>
+      <div style={{ display: 'flex' }}>
+        <div style={{ border: '1px solid' }}>
+          <ul>
+            {rooms?.map((room) => (
+              <li
+                key={room.id}
+                onClick={() => {
+                  setCurrentRoomId(room.id);
+                }}>
+                {room.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div style={{ border: '1px solid' }}>
+          <MessageList
+            className="chat-list"
+            toBottomHeight={'100%'}
+            lockable={true}
+            dataSource={messages
+              ?.slice()
+              .sort(
+                (a, b) => a.createdAt.nanoseconds - b.createdAt.nanoseconds
+              )}
+          />
+          <div style={{ display: 'flex' }}>
+            <Input
+              onChange={(e: any) => setText(e.target.value)}
+              placeholder="Type here..."
+            />
+            <Button
+              onClick={(e: any) => sendMessage(text)}
+              text={'click me!'}
+            />
+          </div>
+        </div>
+      </div>
     </>
   );
 }

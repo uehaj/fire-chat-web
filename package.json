@@ -13,6 +13,7 @@
     "@types/react-dom": "^16.9.8",
     "firebase-tools": "^8.7.0",
     "react": "^16.13.1",
+    "react-chat-elements": "^10.9.3",
     "react-dom": "^16.13.1",
     "react-firebase-hooks": "^2.2.0",
     "react-scripts": "3.4.3",
