@@ -21,4 +21,10 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-firebaseConfig.js.vscode
+firebaseConfig.js
+.vscode
+*.log
+.cache
+firebabse-config.js
+.firebase/
+*-debug.log

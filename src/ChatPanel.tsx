@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-import { MessageList, Input, Button, ChatList } from 'react-chat-elements';
+import {
+  MessageList,
+  Input,
+  Button,
+  ChatList,
+  SideBar,
+} from 'react-chat-elements';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 
 import 'react-chat-elements/dist/main.css';
@@ -12,7 +18,7 @@ type Text = {
   text: string;
   position: 'left' | 'right' | 'center';
   type: 'text';
-  createdAt: any;
+  date: Date;
 };
 
 type Room = {
@@ -25,11 +31,13 @@ function ChatPage(props: any) {
     firebase.firestore().collection('rooms'),
     { idField: 'id' }
   );
+
+  console.log(`rooms=${JSON.stringify(rooms)}`);
   const [currentRoomId, setCurrentRoomId] = useState<string>('?');
   if (currentRoomId === '?' && rooms && rooms[0]) {
     setCurrentRoomId(rooms[0].id);
   }
-  const [messages] = useCollectionData<Text>(
+  const [fireStoreMessages] = useCollectionData(
     firebase
       .firestore()
       .collection('rooms')
@@ -39,8 +47,6 @@ function ChatPage(props: any) {
       idField: 'id',
     }
   );
-
-  const [text, setText] = useState('');
 
   function sendMessage(message: string) {
     firebase
@@ -54,46 +60,80 @@ function ChatPage(props: any) {
       });
   }
 
+  const messages: Text[] | undefined = fireStoreMessages?.map((m: any) => {
+    return {
+      id: m.id,
+      text: `${m.text}`,
+      position: 'left',
+      type: 'text',
+      date: m.createdAt?.toDate(),
+    };
+  });
+
+  const sortedMessages = messages?.sort((a, b) => {
+    if (!a.date) {
+      return 1;
+    }
+    if (!b.date) {
+      return -1;
+    }
+    return a.date.getTime() - b.date.getTime();
+  });
+
+  const inputRef = useRef(null);
+
   return (
-    <>
-      <div style={{ display: 'flex' }}>
-        <div style={{ border: '1px solid' }}>
-          <ul>
-            {rooms?.map((room) => (
-              <li
-                key={room.id}
-                onClick={() => {
-                  setCurrentRoomId(room.id);
-                }}>
-                {room.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div style={{ border: '1px solid' }}>
-          <MessageList
-            className="chat-list"
-            toBottomHeight={'100%'}
-            lockable={true}
-            dataSource={messages
-              ?.slice()
-              .sort(
-                (a, b) => a.createdAt.nanoseconds - b.createdAt.nanoseconds
-              )}
-          />
-          <div style={{ display: 'flex' }}>
-            <Input
-              onChange={(e: any) => setText(e.target.value)}
-              placeholder="Type here..."
-            />
-            <Button
-              onClick={(e: any) => sendMessage(text)}
-              text={'click me!'}
-            />
-          </div>
-        </div>
+    <div className="container">
+      <div className="chat-list">
+        <ul>
+          {rooms?.map((room) => (
+            <li
+              key={room.id}
+              onClick={() => {
+                setCurrentRoomId(room.id);
+              }}>
+              {room.name}
+            </li>
+          ))}
+        </ul>
       </div>
-    </>
+      <div className="right-panel">
+        <MessageList
+          className="message-list"
+          dataSource={sortedMessages}
+          downButton={true}
+          downButtonBadge={10}
+        />
+        <Input
+          placeholder="Type here..."
+          multiline={true}
+          ref={inputRef}
+          autofocus={true}
+          rightButtons={
+            <Button
+              color="white"
+              backgroundColor="black"
+              text="Send"
+              onClick={(e: any) => {
+                sendMessage((inputRef.current as any).input.value);
+                (inputRef.current as any).clear();
+              }}
+            />
+          }
+          onKeyPress={(e: any) => {
+            if (e.shiftKey && e.charCode === 13) {
+              return true;
+            }
+            if (e.charCode === 13) {
+              sendMessage(e.target.value);
+              e.target.value = '';
+              e.preventDefault();
+              return false;
+            }
+          }}
+        />
+      </div>
+    </div>
   );
 }
 
